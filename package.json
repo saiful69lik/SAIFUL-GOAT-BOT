@@ -1,8 +1,8 @@
 {
   "name": "CYBER GOAT BOT",
   "version": "2.1.0",
-  "description": "A simple Bot chat messenger using personal account. Made by ST | CYBER ULLASH",
-  "main": "Ullash.js",
+  "description": "A simple Bot chat messenger using personal account. Made by SI | CYBER SAIFUL",
+  "main": "Saiful.js",
   "engines": {
     "node": "18.x",
     "npm": ">=7.0.0"
