@@ -1,64 +1,103 @@
-const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
+
+const fs = require("fs").promises;
+const fssync = require("fs");
+const path = require("path");
+const axios = require("axios");
+const moment = require("moment-timezone");
 
 module.exports = {
-config: {
-  name: "owner",
-  aurthor:"Tokodori",// Convert By Goatbot Tokodori 
-   role: 0,
-  shortDescription: " ",
-  longDescription: "",
-  category: "admin",
-  guide: "{pn}"
-},
+  config: {
+    name: "owner",
+    version: "1.2",
+    author: "Raihan | Azad 💥",
+    category: "owner",
+    guide: {
+      en: "Use !owner or type Hinata Admin to view owner info."
+    }
+  },
 
   onStart: async function ({ api, event }) {
-  try {
-    const ownerInfo = {
-      name: 'SAIFUL ISLAM',
-      gender: 'Male',
-      age: '26+',
-      height: 'Unknown',
-      facebookLink: 'https://www.facebook.com/saifulislam13si',
-      nick: 'SAIFUL\n\n𝐅𝐨𝐫 𝐦𝐨𝐫𝐞 𝐢𝐧𝐟𝐨𝐫𝐦𝐚𝐭𝐢𝐨𝐧 𝐯𝐢𝐬𝐢𝐭: https://saiful-islam.cyberbot.top'
-    };
+    // Ensure only one owner message per thread
+    if (!this.sentThreads) this.sentThreads = {};
+    if (this.sentThreads[event.threadID]) return;
+    this.sentThreads[event.threadID] = true;
 
-    const bold = 'https://files.catbox.moe/hdw44h.mp4'; // Replace with your Google Drive videoid link https://drive.google.com/uc?export=download&id=here put your video id
+    const ownerInfo = {  
+      name: "SAIFUL ISLAM",  
+      gender: "Male",  
+      bio: " 🌸",  
+      nick: "SAIFUL",  
+      hobby: "gaming",  
+      from: "Laksmipur,Bangladesh",  
+      age: "26",  
+      status: "প্রবাসি"  
+    };  
 
-    const tmpFolderPath = path.join(__dirname, 'tmp');
+    const sec = process.uptime();  
+    const botUptime = `${Math.floor(sec / 86400)}d ${Math.floor(sec % 86400 / 3600)}h ${Math.floor(sec % 3600 / 60)}m`;  
+    const now = moment().tz("Asia/Dhaka").format("h:mm A • dddd");  
 
-    if (!fs.existsSync(tmpFolderPath)) {
-      fs.mkdirSync(tmpFolderPath);
-    }
+    const body = `
 
-    const videoResponse = await axios.get(bold, { responseType: 'arraybuffer' });
-    const videoPath = path.join(tmpFolderPath, 'owner_video.mp4');
+🌸┌───────────────┐🌸
+𝗢𝗪𝗡𝗘𝗥 𝗜𝗡𝗙𝗢
+🌸└───────────────┘🌸
 
-    fs.writeFileSync(videoPath, Buffer.from(videoResponse.data, 'binary'));
+✧ Name ➝ ${ownerInfo.name}
+✧ Gender ➝ ${ownerInfo.gender}
+✧ From ➝ ${ownerInfo.from}
+✧ Age ➝ ${ownerInfo.age}
+✧ Hobby ➝ ${ownerInfo.hobby}
+✧ Status ➝ ${ownerInfo.status}
 
-    const response = `
-Owner Information:🧾
-Name: ${ownerInfo.name}
-Gender: ${ownerInfo.gender}
-Age: ${ownerInfo.age}
-Height: ${ownerInfo.height}
-Facebook: ${ownerInfo.facebookLink}
-Nick: ${ownerInfo.nick}
+━━━━━━━━━━━━━━
+
+✦ Bot Name ➝ ${ownerInfo.bio}
+✦ Admin ➝ ${ownerInfo.nick}
+
+━━━━━━━━━━━━━━
+
+✨ Uptime ➝ ${botUptime}
+✨ Time ➝ ${now}
+
+📝 Any problem? Talk to admin.
 `;
 
+    // Image URL  
+    const imageUrl = "https://files.catbox.moe/ega4vt.jpg";  
+    const imagePath = path.join(__dirname, "cache", "owner.jpg");  
 
-    await api.sendMessage({
-      body: response,
-      attachment: fs.createReadStream(videoPath)
-    }, event.threadID, event.messageID);
+    try {  
+      // Download image  
+      const response = await axios.get(imageUrl, { responseType: "stream" });  
+      const writer = response.data.pipe(fssync.createWriteStream(imagePath));  
+      await new Promise((resolve, reject) => {  
+        writer.on("finish", resolve);  
+        writer.on("error", reject);  
+      });  
 
-    if (event.body.toLowerCase().includes('ownerinfo')) {
-      api.setMessageReaction('🚀', event.messageID, (err) => {}, true);
+      const msg = await api.sendMessage({  
+        body,  
+        attachment: fssync.createReadStream(imagePath)  
+      }, event.threadID);  
+
+      this.lastOwnerMsgID = msg.messageID;  
+      await fs.unlink(imagePath);  
+
+    } catch (e) {  
+      console.error("Error sending owner image:", e);  
+      const msg = await api.sendMessage(body, event.threadID);  
+      this.lastOwnerMsgID = msg.messageID;  
     }
-  } catch (error) {
-    console.error('Error in ownerinfo command:', error);
-    return api.sendMessage('An error occurred while processing the command.', event.threadID);
+
+  },
+
+  onChat: async function ({ api, event }) {
+    if (!event.body) return;
+    const msg = event.body.toLowerCase().trim();
+
+    if (msg === "!owner" || msg === "hinata admin") {  
+      await this.onStart({ api, event });  
+    }
   }
-},
 };
